@@ -5,10 +5,9 @@ import json
 import re
 from typing import List, Dict
 
-# Obtener la API Key del entorno
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Set your OpenAI API key\openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# Preguntas del formulario
+# Load questions
 def load_questions() -> List[str]:
     return [
         "What does your business sell?",
@@ -29,10 +28,9 @@ def load_questions() -> List[str]:
         "What are your goals for the next 12 months?"
     ]
 
-# Llamada a OpenAI
+# GPT call
 def gpt_extract(prompt: str) -> str:
-    client = openai.OpenAI()
-    response = client.chat.completions.create(
+    response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are a business strategist AI."},
@@ -40,27 +38,26 @@ def gpt_extract(prompt: str) -> str:
         ],
         temperature=0.7
     )
-    return response.choices[0].message.content.strip()
+    return response['choices'][0]['message']['content'].strip()
 
-# Organizar respuestas en componentes de estrategia
-def parse_system_components(answers: List[str], questions: List[str]) -> Dict:
-    combined_input = "\n".join([f"{i+1}. {q}\n{i+1}: {a}" for i, (q, a) in enumerate(zip(questions, answers))])
+# System parser
+def parse_system_components(answers: List[str], questions: List[str]) -> str:
+    combined_input = "\n".join([f"Q{i+1}: {q}\nA{i+1}: {a}" for i, (q, a) in enumerate(zip(questions, answers))])
     prompt = f"""
 Given the following business questionnaire, extract and structure:
-
 - Stocks (cash, assets, people, partnerships)
 - Flows (revenue, costs, acquisition channels, ops)
 - Loops (reinforcing patterns like more X leads to more Y)
 - Context (trends, customer needs, competition)
 
-Return as a JSON with those four categories.
+Return only a valid JSON object with those four categories. Do not include any explanation or text outside the JSON.
 
 Questionnaire:
 {combined_input}
 """
     return gpt_extract(prompt)
 
-# Interfaz de usuario Streamlit
+# Streamlit app
 st.set_page_config(page_title="Strategy Agent: Blue Ocean Generator")
 st.title("🚀 Strategy Agent: Blue Ocean Generator")
 st.write("Answer these 16 questions and get your custom strategy.")
@@ -80,14 +77,11 @@ if submitted:
     else:
         try:
             strategy_text = parse_system_components(answers, questions)
-
-            # Limpiar posibles backticks de formato Markdown tipo ```json
-            cleaned = re.sub(r"```(json)?", "", strategy_text).strip()
-
-            # Intentar convertir el texto a JSON
+            cleaned = re.sub(r"```(?:json)?", "", strategy_text).replace("```", "").strip()
             strategy = json.loads(cleaned)
-
             st.success("Here's your strategy:")
             st.json(strategy)
-        except Exception as e:
+        except json.JSONDecodeError as e:
             st.error(f"Error parsing strategy JSON: {e}")
+        except Exception as e:
+            st.error(f"Unexpected error: {e}")
