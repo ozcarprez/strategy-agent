@@ -1,14 +1,14 @@
 import streamlit as st
+import openai
 import os
 import json
 import re
-from openai import OpenAI
 from typing import List, Dict
 
-# Configurar cliente OpenAI
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Obtener la API Key del entorno
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# Cargar preguntas
+# Preguntas del formulario
 def load_questions() -> List[str]:
     return [
         "What does your business sell?",
@@ -31,8 +31,9 @@ def load_questions() -> List[str]:
 
 # Llamada a OpenAI
 def gpt_extract(prompt: str) -> str:
+    client = openai.OpenAI()
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",  # Usa "gpt-4" si tu cuenta tiene acceso
+        model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are a business strategist AI."},
             {"role": "user", "content": prompt}
@@ -41,10 +42,9 @@ def gpt_extract(prompt: str) -> str:
     )
     return response.choices[0].message.content.strip()
 
-# Extraer componentes estratégicos
+# Organizar respuestas en componentes de estrategia
 def parse_system_components(answers: List[str], questions: List[str]) -> Dict:
     combined_input = "\n".join([f"{i+1}. {q}\n{i+1}: {a}" for i, (q, a) in enumerate(zip(questions, answers))])
-    
     prompt = f"""
 Given the following business questionnaire, extract and structure:
 
@@ -57,10 +57,10 @@ Return as a JSON with those four categories.
 
 Questionnaire:
 {combined_input}
-    """
+"""
     return gpt_extract(prompt)
 
-# Interfaz con Streamlit
+# Interfaz de usuario Streamlit
 st.set_page_config(page_title="Strategy Agent: Blue Ocean Generator")
 st.title("🚀 Strategy Agent: Blue Ocean Generator")
 st.write("Answer these 16 questions and get your custom strategy.")
@@ -72,7 +72,6 @@ with st.form("strategy_form"):
     for q in questions:
         answer = st.text_input(q)
         answers.append(answer)
-
     submitted = st.form_submit_button("Generate Strategy")
 
 if submitted:
@@ -82,14 +81,13 @@ if submitted:
         try:
             strategy_text = parse_system_components(answers, questions)
 
-            # Limpiar texto en caso de que venga con ```json
+            # Limpiar posibles backticks de formato Markdown tipo ```json
             cleaned = re.sub(r"```(json)?", "", strategy_text).strip()
 
-            # Convertir a diccionario JSON
+            # Intentar convertir el texto a JSON
             strategy = json.loads(cleaned)
 
             st.success("Here's your strategy:")
             st.json(strategy)
-
         except Exception as e:
             st.error(f"Error parsing strategy JSON: {e}")
