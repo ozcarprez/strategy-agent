@@ -55,7 +55,7 @@ Return as a JSON with those four categories.
 Questionnaire:
 {combined_input}
 """
-    return eval(gpt_extract(prompt))
+    return gpt_extract(prompt)
 
 # Streamlit app
 st.set_page_config(page_title="Strategy Agent: Blue Ocean Generator")
