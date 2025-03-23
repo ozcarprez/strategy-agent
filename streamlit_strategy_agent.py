@@ -27,9 +27,10 @@ def load_questions() -> List[str]:
         "What are your goals for the next 12 months?"
     ]
 
-# GPT call
+# GPT call (new API)
 def gpt_extract(prompt: str) -> str:
-    response = openai.ChatCompletion.create(
+    client = openai.OpenAI()
+    response = client.chat.completions.create(
         model="gpt-4",
         messages=[
             {"role": "system", "content": "You are a business strategist AI."},
@@ -46,37 +47,38 @@ def parse_system_components(answers: List[str], questions: List[str]) -> Dict:
 Given the following business questionnaire, extract and structure:
 - Stocks (cash, assets, people, partnerships)
 - Flows (revenue, costs, acquisition channels, ops)
-- Loops (reinforcing patterns like more sales → more buzz)
+- Loops (reinforcing patterns like more X leads to more Y)
 - Context (trends, customer needs, competition)
 
 Return as a JSON with those four categories.
 
+Questionnaire:
 {combined_input}
 """
-    strategy_json = gpt_extract(prompt)
-    return strategy_json
+    return eval(gpt_extract(prompt))
 
-# Streamlit App UI
-st.set_page_config(page_title="Strategy Agent", layout="wide")
+# Streamlit app
+st.set_page_config(page_title="Strategy Agent: Blue Ocean Generator")
 st.title("🚀 Strategy Agent: Blue Ocean Generator")
-st.markdown("Answer these 16 questions and get your custom strategy.")
+st.write("Answer these 16 questions and get your custom strategy.")
 
 questions = load_questions()
 answers = []
 
-for q in questions:
-    a = st.text_input(q)
-    answers.append(a)
+with st.form("strategy_form"):
+    for q in questions:
+        answer = st.text_input(q)
+        answers.append(answer)
+    submitted = st.form_submit_button("Generate Strategy")
 
-if st.button("Generate Strategy"):
-    if all(answers):
-        with st.spinner("Thinking like Munger..."):
-            try:
-                result = parse_system_components(answers, questions)
-                st.subheader("📋 Your Strategy Summary:")
-                st.code(result, language="json")
-            except Exception as e:
-                st.error(f"Something went wrong: {e}")
+if submitted:
+    if "" in answers:
+        st.error("Please answer all the questions.")
     else:
-        st.warning("Please answer all questions before generating your strategy.")
+        try:
+            strategy = parse_system_components(answers, questions)
+            st.success("Here's your strategy:")
+            st.json(strategy)
+        except Exception as e:
+            st.error(f"Something went wrong: {e}")
 
