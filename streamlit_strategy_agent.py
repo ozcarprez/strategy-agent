@@ -31,7 +31,7 @@ def load_questions() -> List[str]:
 def gpt_extract(prompt: str) -> str:
     client = openai.OpenAI()
     response = client.chat.completions.create(
-        model="gpt-4",
+        model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are a business strategist AI."},
             {"role": "user", "content": prompt}
