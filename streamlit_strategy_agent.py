@@ -29,7 +29,7 @@ def load_questions() -> List[str]:
 
 # GPT call
 def gpt_extract(prompt: str) -> str:
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-4",
         messages=[
             {"role": "system", "content": "You are a business strategist AI."},
@@ -37,6 +37,8 @@ def gpt_extract(prompt: str) -> str:
         ],
         temperature=0.7
     )
+    return response.choices[0].message.content.strip()
+
     return response['choices'][0]['message']['content'].strip()
 
 # System parser
