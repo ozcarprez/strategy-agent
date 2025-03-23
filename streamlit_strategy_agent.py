@@ -76,9 +76,19 @@ if submitted:
         st.error("Please answer all the questions.")
     else:
         try:
-            strategy = parse_system_components(answers, questions)
-            st.success("Here's your strategy:")
-            st.json(strategy)
-        except Exception as e:
-            st.error(f"Something went wrong: {e}")
+           import re  # Asegúrate de tener esto al inicio del archivo
+
+strategy_text = parse_system_components(answers, questions)
+
+try:
+    # Limpiar los ```json o ``` si los hubiera
+    cleaned = re.sub(r"```(json)?", "", strategy_text).strip()
+
+    # Convertir a JSON
+    strategy = json.loads(cleaned)
+
+    st.success("Here's your strategy:")
+    st.json(strategy)
+except Exception as e:
+    st.error(f"Error parsing strategy JSON: {e}")
 
