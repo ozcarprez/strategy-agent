@@ -2,6 +2,7 @@ import streamlit as st
 import openai
 import os
 import json
+import re
 from typing import List, Dict
 
 # Set your OpenAI API key
@@ -28,27 +29,26 @@ def load_questions() -> List[str]:
         "What are your goals for the next 12 months?"
     ]
 
-# GPT call (new API)
+# GPT call
 def gpt_extract(prompt: str) -> str:
-    client = openai.OpenAI()
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",  # Puedes cambiar a "gpt-4" si tienes acceso
         messages=[
             {"role": "system", "content": "You are a business strategist AI."},
             {"role": "user", "content": prompt}
         ],
         temperature=0.7
     )
-    return response.choices[0].message.content.strip()
+    return response['choices'][0]['message']['content'].strip()
 
 # System parser
 def parse_system_components(answers: List[str], questions: List[str]) -> Dict:
-    combined_input = "\n".join([f"Q{i+1}: {q}\nA{i+1}: {a}" for i, (q, a) in enumerate(zip(questions, answers))])
+    combined_input = "\n".join([f"{i+1}. {q}\nA{i+1}: {a}" for i, (q, a) in enumerate(zip(questions, answers))])
     prompt = f"""
 Given the following business questionnaire, extract and structure:
 - Stocks (cash, assets, people, partnerships)
 - Flows (revenue, costs, acquisition channels, ops)
-- Loops (reinforcing patterns like more X leads to more Y)
+- Loops (patterns like more X leads to more Y)
 - Context (trends, customer needs, competition)
 
 Return as a JSON with those four categories.
@@ -77,19 +77,17 @@ if submitted:
         st.error("Please answer all the questions.")
     else:
         try:
-           import re  # Asegúrate de tener esto al inicio del archivo
+            strategy_text = parse_system_components(answers, questions)
 
-strategy_text = parse_system_components(answers, questions)
+            # Limpiar los ```json o ``` si los hubiera
+            cleaned = re.sub(r"```(json)?", "", strategy_text).strip()
 
-try:
-    # Limpiar los ```json o ``` si los hubiera
-    cleaned = re.sub(r"```(json)?", "", strategy_text).strip()
+            # Convertir a JSON
+            strategy = json.loads(cleaned)
 
-    # Convertir a JSON
-    strategy = json.loads(cleaned)
+            st.success("Here's your strategy:")
+            st.json(strategy)
 
-    st.success("Here's your strategy:")
-    st.json(strategy)
-except Exception as e:
-    st.error(f"Error parsing strategy JSON: {e}")
+        except Exception as e:
+            st.error(f"Error parsing strategy JSON: {e}")
 
