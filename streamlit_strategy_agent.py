@@ -8,7 +8,6 @@ from typing import List, Dict
 
 # Set your OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
-
 # Load questions
 def load_questions() -> List[str]:
     return [
