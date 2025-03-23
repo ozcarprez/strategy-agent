@@ -1,6 +1,9 @@
 import streamlit as st
-import openai
+from openai import OpenAI
+client = OpenAI()
+
 import os
+
 from typing import List, Dict
 
 # Set your OpenAI API key
