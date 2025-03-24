@@ -32,43 +32,28 @@ def load_questions() -> List[str]:
 # System parser
 def parse_system_components(answers: List[str], questions: List[str]) -> Dict:
     combined_input = "\n".join([f"Q{i+1}: {q}\nA{i+1}: {a}" for i, (q, a) in enumerate(zip(questions, answers))])
-    prompt = f"""
-Given the following business questionnaire, extract and structure the response into a valid JSON using this format:
+   prompt = f"""
+You are a strategy consultant trained in models like Blue Ocean Strategy, Mental Models, and Systems Thinking.
+
+Given the following business questionnaire, do the following:
+
+1. Extract key insights and patterns from the answers.
+2. Identify bottlenecks, opportunities, and reinforcing loops.
+3. Suggest a *strategic recommendation* to stand out in the market (as a JSON format).
+
+Return a **valid JSON** with the following structure:
 
 {{
-  "Stocks": {{
-    "cash": "...",
-    "assets": "...",
-    "people": ["...", "..."],
-    "partnerships": ["...", "..."]
-  }},
-  "Flows": {{
-    "revenue": "...",
-    "costs": ["...", "..."],
-    "acquisition channels": ["..."],
-    "ops": {{
-      "bottleneck": "..."
-    }}
-  }},
-  "Loops": {{
-    "reinforcing patterns": {{
-      "X": "...",
-      "Y": "..."
-    }}
-  }},
-  "Context": {{
-    "trends": ["..."],
-    "customer needs": ["...", "..."],
-    "competition": ["..."]
-  }}
+  "Insights": ["..."],
+  "Bottlenecks": ["..."],
+  "Opportunities": ["..."],
+  "Loops": ["..."],
+  "Strategic Recommendation": "..."
 }}
 
-Only return the JSON object. Don’t include markdown formatting or explanation.
-
-Questionnaire:
+Here is the questionnaire:
 {combined_input}
 """
-
 
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
