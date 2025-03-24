@@ -35,6 +35,7 @@ def load_questions() -> List[str]:
         "¿Quién es tu competencia invisible (la opción que nadie ve pero que gana)?"
     ]
 
+# Función para generar el sistema desde GPT
 def parse_system_components(answers: List[str], questions: List[str]) -> Dict:
     combined_input = "\n".join([f"Q{i+1}: {q}\nA{i+1}: {a}" for i, (q, a) in enumerate(zip(questions, answers))])
 
@@ -46,25 +47,21 @@ Given the following business questionnaire, extract and structure:
 - Loops (feedback patterns: reinforcing or limiting loops)
 - Context (external forces, market trends, customer needs, competitors)
 
-Return ONLY a JSON with the following structure:
+Return a JSON with the structure:
 {{
-  "Stocks": {{...}},
-  "Flows": {{...}},
-  "Loops": {{...}},
-  "Context": {{...}},
+  "Stocks": {{ ... }},
+  "Flows": {{ ... }},
+  "Loops": {{ ... }},
+  "Context": {{ ... }},
   "Summary": {{
-    "Insights": "...",
-    "Bottlenecks": "...",
-    "Opportunities": "...",
-    "Strategic Recommendation": "...",
-    "Roadmap": {{
-        "Short Term": ["..."],
-        "Mid Term": ["..."],
-        "Long Term": ["..."]
-    }},
-    "Mermaid Diagram": "mermaid code"
+    "Insights": [...],
+    "Bottlenecks": [...],
+    "Opportunities": [...],
+    "Strategic Recommendation": "..."
   }}
 }}
+
+Also include a Mermaid diagram code block to visualize the system. Use `graph TD` format to represent key relationships between Stocks, Flows, and Loops.
 
 Questionnaire:
 {combined_input}
@@ -79,7 +76,6 @@ Questionnaire:
     return json.loads(response.choices[0].message.content)
 
 def generate_notion_template(strategy_data: Dict) -> str:
-    summary = strategy_data.get("Summary", {})
     template = """# Business System Map (Systems Thinking)
 
 ## 🧱 Stocks
@@ -105,16 +101,6 @@ def generate_notion_template(strategy_data: Dict) -> str:
 ## 🚀 Opportunities
 {opportunities}
 
-## 🧭 Roadmap
-### Corto Plazo
-{roadmap_short}
-
-### Mediano Plazo
-{roadmap_mid}
-
-### Largo Plazo
-{roadmap_long}
-
 ## 🎯 Strategic Recommendation
 {recommendation}
 
@@ -123,19 +109,17 @@ def generate_notion_template(strategy_data: Dict) -> str:
 {mermaid}
 ```
 """
+
     return template.format(
-        stocks=json.dumps(strategy_data.get("Stocks", {}), indent=2, ensure_ascii=False),
-        flows=json.dumps(strategy_data.get("Flows", {}), indent=2, ensure_ascii=False),
-        loops=json.dumps(strategy_data.get("Loops", {}), indent=2, ensure_ascii=False),
-        context=json.dumps(strategy_data.get("Context", {}), indent=2, ensure_ascii=False),
-        insights=summary.get("Insights", ""),
-        bottlenecks=summary.get("Bottlenecks", ""),
-        opportunities=summary.get("Opportunities", ""),
-        roadmap_short="\n- " + "\n- ".join(summary.get("Roadmap", {}).get("Short Term", [])),
-        roadmap_mid="\n- " + "\n- ".join(summary.get("Roadmap", {}).get("Mid Term", [])),
-        roadmap_long="\n- " + "\n- ".join(summary.get("Roadmap", {}).get("Long Term", [])),
-        recommendation=summary.get("Strategic Recommendation", ""),
-        mermaid=summary.get("Mermaid Diagram", "")
+        stocks=json.dumps(strategy_data["Stocks"], indent=2),
+        flows=json.dumps(strategy_data["Flows"], indent=2),
+        loops=json.dumps(strategy_data["Loops"], indent=2),
+        context=json.dumps(strategy_data["Context"], indent=2),
+        insights="\n- " + "\n- ".join(strategy_data["Summary"]["Insights"] if isinstance(strategy_data["Summary"]["Insights"], list) else [strategy_data["Summary"]["Insights"]]),
+        bottlenecks="\n- " + "\n- ".join(strategy_data["Summary"]["Bottlenecks"] if isinstance(strategy_data["Summary"]["Bottlenecks"], list) else [strategy_data["Summary"]["Bottlenecks"]]),
+        opportunities="\n- " + "\n- ".join(strategy_data["Summary"]["Opportunities"] if isinstance(strategy_data["Summary"]["Opportunities"], list) else [strategy_data["Summary"]["Opportunities"]]),
+        recommendation=strategy_data["Summary"]["Strategic Recommendation"],
+        mermaid=strategy_data.get("Mermaid", "graph TD\n    A[Missing diagram]")
     )
 
 # Streamlit UI
