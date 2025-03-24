@@ -125,16 +125,16 @@ if submitted:
         st.error("Por favor responde todas las preguntas.")
     else:
         with st.spinner("Analizando tu sistema de negocio..."):
-            try:
-                strategy_data = parse_system_components(answers, questions)
-                st.success("\ud83d\ude80 Estrategia generada")
-                st.subheader("Resumen")
-                st.json(strategy_data)
+           try:
+    strategy_data = parse_system_components(answers, questions)
+    st.success("🚀 Estrategia generada")
+    st.subheader("Resumen")
+    st.json(strategy_data)
 
-                # Descargar plantilla para Notion
-                notion_text = generate_notion_template(strategy_data)
-                safe_text = notion_text.encode("utf-8", "ignore").decode("utf-8")
-st.download_button("Descargar Plantilla para Notion", data=safe_text, file_name="business_system.md")
+    # Descargar plantilla para Notion
+    notion_text = generate_notion_template(strategy_data)
+    safe_text = notion_text.encode("utf-8", "ignore").decode("utf-8")
+    st.download_button("Descargar Plantilla para Notion", data=safe_text, file_name="business_system.md")
 
-            except Exception as e:
-                st.error(f"Error: {e}")
+except Exception as e:
+    st.error(f"Error: {e}")
