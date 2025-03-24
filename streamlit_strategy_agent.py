@@ -2,142 +2,105 @@ import streamlit as st
 import openai
 import os
 import json
-import re
 from typing import List, Dict
 
-# Cargar clave API desde variable de entorno
+# Configurar clave de API
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Preguntas con enfoque de systems thinking
-def load_questions() -> List[str]:
+# Preguntas para construir el Flywheel
+
+def load_flywheel_questions() -> List[str]:
     return [
-        # STOCKS
-        "¿Con cuánto capital cuentas actualmente para operar?",
-        "¿Qué activos físicos, relaciones o conocimientos clave ya tienes?",
-        "¿A quiénes sirves hoy? (clientes principales)",
-        "¿Qué relaciones o alianzas tienes con otros actores (proveedores, socios)?",
+        # Fundamentos
+        "\U0001F50D ¿Qué actividad en tu negocio, cuando la haces consistentemente, genera resultados positivos?",
+        "\u2696️ ¿Qué resultados te dan energía o recursos para seguir impulsando el sistema?",
+        "\U0001F680 ¿Qué aspecto de tu negocio ya tiene tracción natural (crece sin mucho esfuerzo)?",
+        "\U0001F91D ¿Qué valor entregas que hace que los clientes regresen o recomienden tu producto?",
+        "\U0001F9BE ¿Qué fortalezas o capacidades únicas tienes que podrías aprovechar más?",
+        "\U0001F501 ¿Qué acciones tienen un efecto compuesto si las haces repetidamente?",
+        "\U0001F44D ¿Qué es lo que tus clientes más valoran y te reconocen?",
 
-        # FLOWS
-        "¿Cómo entra dinero a tu sistema actualmente? (ventas, inversión, etc.)",
-        "¿En qué se te va la mayoría del dinero o recursos?",
-        "¿Qué canales usas para conseguir clientes nuevos?",
-        "¿Qué operaciones necesitas hacer cada semana para entregar valor?",
+        # Secuencia del Flywheel
+        "\u25B6️ Paso 1: ¿Cuál es el primer paso clave que detona todo lo demás?",
+        "\u23F3 Paso 2: ¿Qué ocurre después que genera valor y satisfacción?",
+        "\U0001F4C8 Paso 3: ¿Qué pasa que hace más probable que los clientes regresen o que tú reinviertas?",
+        "\U0001F4AA Paso 4: ¿Qué haces con ese impulso para hacerlo crecer aún más?",
+        "\U0001F504 Paso 5: ¿Qué parte se repite o se automatiza para mantener el ciclo?",
 
-        # LOOPS
-        "¿Qué hábito o proceso repetitivo parece estar frenando tu crecimiento?",
-        "¿Qué cosas haces que, cuando las haces más, generan más resultados?",
-        "¿Qué efecto tiene tu falta de recursos sobre el resto de tu sistema?",
-        "¿Qué errores o ciclos negativos se repiten y vuelven a aparecer?",
-
-        # CONTEXTO
-        "¿Qué cambios grandes están ocurriendo en tu industria o mercado?",
-        "¿Qué tendencias, leyes o tecnologías están cambiando las reglas del juego?",
-        "¿Qué es lo que tus clientes más te piden o necesitan con urgencia?",
-        "¿Quién es tu competencia invisible (la opción que nadie ve pero que gana)?"
+        # Obstáculos y claridad
+        "\u274C ¿Qué parte de tu sistema actual detiene el impulso?",
+        "\U0001F4A1 ¿Qué harías si tuvieras que duplicar resultados sin duplicar esfuerzo?",
+        "\u2753 ¿Qué no estás haciendo hoy que, si lo hicieras, haría una gran diferencia?"
     ]
 
-def parse_system_components(answers: List[str], questions: List[str]) -> Dict:
+# Procesar respuestas para generar flywheel
+
+def parse_flywheel(answers: List[str], questions: List[str]) -> Dict:
     combined_input = "\n".join([f"Q{i+1}: {q}\nA{i+1}: {a}" for i, (q, a) in enumerate(zip(questions, answers))])
 
     prompt = f"""
-You are a strategy expert using Systems Thinking.
-Given the following business questionnaire, extract and structure:
-- Stocks (what the business has: cash, assets, people, partnerships)
-- Flows (how value moves: revenue, costs, acquisition, operations)
-- Loops (feedback patterns: reinforcing or limiting loops)
-- Context (external forces, market trends, customer needs, competitors)
+Eres un consultor experto en estrategia con enfoque en Flywheel (modelo de Jim Collins).
+Dado el siguiente cuestionario, construye lo siguiente:
+1. Un resumen de impulso del negocio (Flywheel Summary).
+2. Los pasos del flywheel en secuencia.
+3. Un roadmap por fases: corto, mediano y largo plazo.
+4. Código Mermaid para visualizar el flywheel como diagrama.
 
-Return ONLY a JSON with those four categories and a summary section with:
-- Insights
-- Bottlenecks
-- Opportunities
-- Strategic Recommendation
+Responde SOLO en formato JSON con estas claves:
+- FlywheelSummary
+- FlywheelSteps
+- Roadmap
+- MermaidDiagram
 
-Questionnaire:
+Cuestionario:
 {combined_input}
 """
 
     response = client.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.4
+        temperature=0.5
     )
 
-    raw_output = response.choices[0].message.content
-    json_text = re.search(r"\{.*\}", raw_output, re.DOTALL)
-    if json_text:
-        return json.loads(json_text.group(0))
-    else:
-        raise ValueError("No se pudo extraer un JSON válido de la respuesta.")
+    return json.loads(response.choices[0].message.content)
 
-def generate_notion_template(strategy_data: Dict) -> str:
-    template = """# Business System Map (Systems Thinking)
+# UI
+st.set_page_config(page_title="Flywheel Generator")
+st.title("🌬️ Generador de Flywheel")
+st.write("Responde estas preguntas para mapear tu rueda impulsora según el modelo de Jim Collins.")
 
-## 🧱 Stocks
-{stocks}
-
-## 🔁 Flows
-{flows}
-
-## 🔄 Loops
-{loops}
-
-## 🌍 Context
-{context}
-
----
-
-## 💡 Insights
-{insights}
-
-## ❌ Bottlenecks
-{bottlenecks}
-
-## 🚀 Opportunities
-{opportunities}
-
-## 🌟 Strategic Recommendation
-{recommendation}
-"""
-    return template.format(
-        stocks=json.dumps(strategy_data["Stocks"], indent=2, ensure_ascii=False),
-        flows=json.dumps(strategy_data["Flows"], indent=2, ensure_ascii=False),
-        loops=json.dumps(strategy_data["Loops"], indent=2, ensure_ascii=False),
-        context=json.dumps(strategy_data["Context"], indent=2, ensure_ascii=False),
-        insights="\n- " + "\n- ".join(strategy_data["Summary"]["Insights"] if isinstance(strategy_data["Summary"]["Insights"], list) else [strategy_data["Summary"]["Insights"]]),
-        bottlenecks="\n- " + "\n- ".join(strategy_data["Summary"]["Bottlenecks"] if isinstance(strategy_data["Summary"]["Bottlenecks"], list) else [strategy_data["Summary"]["Bottlenecks"]]),
-        opportunities="\n- " + "\n- ".join(strategy_data["Summary"]["Opportunities"] if isinstance(strategy_data["Summary"]["Opportunities"], list) else [strategy_data["Summary"]["Opportunities"]]),
-        recommendation=strategy_data["Summary"]["Strategic Recommendation"]
-    )
-
-# Streamlit UI
-st.set_page_config(page_title="🧠 Strategy Agent: Systems Thinking")
-st.title("🧠 Strategy Agent: Systems Thinking")
-st.write("Responde estas 16 preguntas para mapear tu negocio como un sistema.")
-
-questions = load_questions()
+questions = load_flywheel_questions()
 answers = []
 
-with st.form("strategy_form"):
+with st.form("flywheel_form"):
     for q in questions:
-        answers.append(st.text_input(q))
-    submitted = st.form_submit_button("Generar Estrategia")
+        answers.append(st.text_area(q))
+    submitted = st.form_submit_button("Generar Flywheel")
 
 if submitted:
     if "" in answers:
         st.error("Por favor responde todas las preguntas.")
     else:
-        with st.spinner("Analizando tu sistema de negocio..."):
+        with st.spinner("Analizando tu sistema de impulso..."):
             try:
-                strategy_data = parse_system_components(answers, questions)
-                st.success("🚀 Estrategia generada")
-                st.subheader("Resumen")
-                st.json(strategy_data)
+                result = parse_flywheel(answers, questions)
+                st.success("Flywheel generado")
 
-                # Descargar plantilla para Notion
-                notion_text = generate_notion_template(strategy_data)
-                safe_text = notion_text.encode("utf-8", "ignore").decode("utf-8")
-                st.download_button("Descargar Plantilla para Notion", data=safe_text, file_name="business_system.md")
+                st.subheader("Resumen del Flywheel")
+                st.markdown(result["FlywheelSummary"])
+
+                st.subheader("🔄 Pasos del Flywheel")
+                for i, step in enumerate(result["FlywheelSteps"], 1):
+                    st.markdown(f"**Paso {i}:** {step}")
+
+                st.subheader("📅 Roadmap")
+                for phase, items in result["Roadmap"].items():
+                    st.markdown(f"### {phase}")
+                    for item in items:
+                        st.markdown(f"- {item}")
+
+                st.subheader("🎭 Visualización (Mermaid)")
+                st.code(result["MermaidDiagram"], language="mermaid")
 
             except Exception as e:
                 st.error(f"Error: {e}")
