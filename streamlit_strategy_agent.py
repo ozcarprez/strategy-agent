@@ -4,95 +4,78 @@ import os
 import json
 from typing import List, Dict
 
-# Set your OpenAI API key
+# Set OpenAI key securely (recommended via environment variable)
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Load questions
-def load_questions() -> List[str]:
+# Redesigned system thinking questions
+def load_system_questions() -> List[str]:
     return [
-        "What does your business sell?",
-        "Who is your target customer?",
-        "How do you currently acquire customers?",
-        "What are your top 3 costs?",
-        "What are your top 3 revenue sources?",
-        "How much cash do you have on hand?",
-        "What assets or equipment do you own?",
-        "Who are your partners or suppliers?",
-        "What’s your monthly revenue (estimate is OK)?",
-        "What’s your biggest bottleneck?",
-        "What sets you apart (if anything)?",
-        "What frustrates your customers the most?",
-        "What’s something customers keep asking for?",
-        "Who are your top competitors?",
-        "What trends or changes are affecting your industry?",
-        "What are your goals for the next 12 months?"
+        "What flows through your business? (e.g., money, products, info)",
+        "What gets stuck or accumulates in your business? (e.g., inventory, debt)",
+        "What loops (repetitive patterns) do you notice happening again and again?",
+        "What causes delays or friction?",
+        "What changes when a part of the system changes?",
+        "What is something you do that creates more of the same result, good or bad?",
+        "Where do small changes seem to have a big effect?",
+        "Who are the main actors (internal or external) moving the system?",
+        "What parts of the system depend on each other?",
+        "If you stepped away, what would keep working and what would stop?"
     ]
 
-# Generate prompt and ask OpenAI
-def parse_system_components(answers: List[str], questions: List[str]) -> Dict:
-    combined_input = "\n".join([f"Q{i+1}: {q}\nA{i+1}: {a}" for i, (q, a) in enumerate(zip(questions, answers))])
+# Generate system-based strategy
+
+def generate_system_strategy(answers: List[str], questions: List[str]) -> Dict:
+    combined = "\n".join([f"Q{i+1}: {q}\nA{i+1}: {a}" for i, (q, a) in enumerate(zip(questions, answers))])
+
     prompt = f"""
-You are a strategy consultant trained in Blue Ocean Strategy, Mental Models, and Systems Thinking.
+Given the business insights below, analyze them using systems thinking.
+1. Identify stocks, flows, delays, and loops.
+2. Highlight any reinforcing or balancing feedback loops.
+3. Identify key bottlenecks and points of leverage.
+4. Give a brutally honest summary of how the system is working.
+5. Offer 2-3 high-leverage strategic recommendations.
 
-Given the following business questionnaire, do the following:
-
-1. Extract key insights and patterns from the answers.
-2. Identify bottlenecks, opportunities, and reinforcing loops.
-3. Suggest a *strategic recommendation* to stand out in the market.
-
-Return a valid JSON in this format:
-
+Respond in this JSON format:
 {{
-  "Insights": ["..."],
-  "Bottlenecks": ["..."],
-  "Opportunities": ["..."],
-  "Loops": ["..."],
-  "Strategic Recommendation": "..."
+  "Loops": [],
+  "Stocks": [],
+  "Flows": [],
+  "Delays": [],
+  "Bottlenecks": [],
+  "LeveragePoints": [],
+  "HonestSummary": "...",
+  "StrategicRecommendations": ["...", "..."]
 }}
 
-Here is the questionnaire:
-{combined_input}
+Business context:
+{combined}
 """
-
     response = client.chat.completions.create(
         model="gpt-4",
-        messages=[
-            {"role": "system", "content": "You are a strategic business analyst."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.7
+        messages=[{"role": "user", "content": prompt}]
     )
-    return response.choices[0].message.content
+    return json.loads(response.choices[0].message.content)
 
-# Streamlit App
-st.set_page_config(page_title="Strategy Agent: Blue Ocean Generator")
-st.title("🌊 Strategy Agent: Blue Ocean Generator")
-st.write("Answer these 16 questions and get your custom strategy.")
+# Streamlit UI
+st.set_page_config(page_title="Systems Thinking Strategy App")
+st.title("🧠 Systems Thinking Strategy Generator")
+st.write("Answer these reflective questions to analyze your business as a system.")
 
-questions = load_questions()
+questions = load_system_questions()
 answers = []
 
-with st.form("strategy_form"):
+with st.form("sys_form"):
     for q in questions:
-        answer = st.text_input(q)
-        answers.append(answer)
-    submitted = st.form_submit_button("Generate Strategy")
+        answers.append(st.text_input(q))
+    submitted = st.form_submit_button("Generate System Strategy")
 
 if submitted:
-    if "" in answers:
-        st.error("Please answer all the questions.")
+    if any(a.strip() == "" for a in answers):
+        st.error("Please answer all questions.")
     else:
         try:
-            import re
-            strategy_text = parse_system_components(answers, questions)
-
-            # Clean output (remove triple backticks if they appear)
-            cleaned = re.sub(r"```(json)?", "", strategy_text).strip()
-            strategy = json.loads(cleaned)
-
-            st.success("Here's your strategy:")
+            strategy = generate_system_strategy(answers, questions)
+            st.success("Here is your systems-based strategy:")
             st.json(strategy)
-
         except Exception as e:
-            st.error(f"Error parsing strategy JSON: {e}")
-
+            st.error(f"Error generating strategy: {e}")
