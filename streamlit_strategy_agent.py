@@ -33,17 +33,42 @@ def load_questions() -> List[str]:
 def parse_system_components(answers: List[str], questions: List[str]) -> Dict:
     combined_input = "\n".join([f"Q{i+1}: {q}\nA{i+1}: {a}" for i, (q, a) in enumerate(zip(questions, answers))])
     prompt = f"""
-Given the following business questionnaire, extract and structure:
-- Stocks (cash, assets, people, partnerships)
-- Flows (revenue, costs, acquisition channels, ops)
-- Loops (reinforcing patterns like more X leads to more Y)
-- Context (trends, customer needs, competition)
+Given the following business questionnaire, extract and structure the response into a valid JSON using this format:
 
-Return as a JSON with those four categories.
+{{
+  "Stocks": {{
+    "cash": "...",
+    "assets": "...",
+    "people": ["...", "..."],
+    "partnerships": ["...", "..."]
+  }},
+  "Flows": {{
+    "revenue": "...",
+    "costs": ["...", "..."],
+    "acquisition channels": ["..."],
+    "ops": {{
+      "bottleneck": "..."
+    }}
+  }},
+  "Loops": {{
+    "reinforcing patterns": {{
+      "X": "...",
+      "Y": "..."
+    }}
+  }},
+  "Context": {{
+    "trends": ["..."],
+    "customer needs": ["...", "..."],
+    "competition": ["..."]
+  }}
+}}
+
+Only return the JSON object. Don’t include markdown formatting or explanation.
 
 Questionnaire:
 {combined_input}
 """
+
 
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
