@@ -92,10 +92,13 @@ if submitted:
                     st.markdown(f"**Paso {i}:** {step}")
 
                 st.subheader("📅 Roadmap")
-                for phase, items in result["Roadmap"].items():
-                    st.markdown(f"### {phase}")
-                    for item in items:
-                        st.markdown(f"- {item}")
+for phase, items in result["Roadmap"].items():
+    st.markdown(f"### {phase}")
+    if isinstance(items, list):
+        for item in items:
+            st.markdown(f"- {item}")
+    else:
+        st.markdown(f"- {items}")
 
                 st.subheader("🎭 Visualización (Mermaid)")
                 st.code(result["MermaidDiagram"], language="mermaid")
