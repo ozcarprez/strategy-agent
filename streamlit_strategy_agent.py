@@ -45,17 +45,19 @@ def gpt_extract(prompt: str) -> str:
 def parse_system_components(answers: List[str], questions: List[str]) -> Dict:
     combined_input = "\n".join([f"Q{i+1}: {q}\nA{i+1}: {a}" for i, (q, a) in enumerate(zip(questions, answers))])
     prompt = f"""
-Given the following business questionnaire, extract and structure:
-- Stocks (cash, assets, people, partnerships)
-- Flows (revenue, costs, acquisition channels, ops)
-- Loops (reinforcing patterns like more X leads to more Y)
-- Context (trends, customer needs, competition)
+You are a business strategist specializing in Blue Ocean Strategy and lean startup principles.
 
-Return as a JSON with those four categories.
+Given the following business questionnaire, provide a strategic analysis. Focus on:
+- Key insights and business patterns
+- Strategic recommendations (eliminate, reduce, raise, create)
+- Opportunities for differentiation and growth
+
+Format your answer clearly using bullet points and sections. Do NOT return JSON.
 
 Questionnaire:
 {combined_input}
 """
+
     return gpt_extract(prompt)
 
 # Streamlit app
