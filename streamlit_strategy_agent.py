@@ -4,7 +4,7 @@ import os
 from typing import List
 
 # Set your OpenAI API key
-openai.api_key = os.getenv("OPENAI_API_KEY")
+client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Load questions
 def load_questions() -> List[str]:
