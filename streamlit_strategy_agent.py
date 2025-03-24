@@ -133,7 +133,7 @@ if submitted:
 
                 # Descargar plantilla para Notion
                 notion_text = generate_notion_template(strategy_data)
-                st.download_button("Descargar Plantilla para Notion", data=notion_text, file_name="business_system.md")
+                st.download_button("Descargar Plantilla para Notion", data=notion_text.encode("utf-8"), file_name="business_system.md")
 
             except Exception as e:
                 st.error(f"Error: {e}")
