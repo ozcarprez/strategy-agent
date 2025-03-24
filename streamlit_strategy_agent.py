@@ -56,7 +56,13 @@ Return ONLY a JSON with the following structure:
     "Insights": "...",
     "Bottlenecks": "...",
     "Opportunities": "...",
-    "Strategic Recommendation": "..."
+    "Strategic Recommendation": "...",
+    "Roadmap": {{
+        "Short Term": ["..."],
+        "Mid Term": ["..."],
+        "Long Term": ["..."]
+    }},
+    "Mermaid Diagram": "mermaid code"
   }}
 }}
 
@@ -99,10 +105,24 @@ def generate_notion_template(strategy_data: Dict) -> str:
 ## 🚀 Opportunities
 {opportunities}
 
-## 🌟 Strategic Recommendation
-{recommendation}
-"""
+## 🧭 Roadmap
+### Corto Plazo
+{roadmap_short}
 
+### Mediano Plazo
+{roadmap_mid}
+
+### Largo Plazo
+{roadmap_long}
+
+## 🎯 Strategic Recommendation
+{recommendation}
+
+## 📊 Visualización del sistema (Mermaid)
+```mermaid
+{mermaid}
+```
+"""
     return template.format(
         stocks=json.dumps(strategy_data.get("Stocks", {}), indent=2, ensure_ascii=False),
         flows=json.dumps(strategy_data.get("Flows", {}), indent=2, ensure_ascii=False),
@@ -111,7 +131,11 @@ def generate_notion_template(strategy_data: Dict) -> str:
         insights=summary.get("Insights", ""),
         bottlenecks=summary.get("Bottlenecks", ""),
         opportunities=summary.get("Opportunities", ""),
-        recommendation=summary.get("Strategic Recommendation", "")
+        roadmap_short="\n- " + "\n- ".join(summary.get("Roadmap", {}).get("Short Term", [])),
+        roadmap_mid="\n- " + "\n- ".join(summary.get("Roadmap", {}).get("Mid Term", [])),
+        roadmap_long="\n- " + "\n- ".join(summary.get("Roadmap", {}).get("Long Term", [])),
+        recommendation=summary.get("Strategic Recommendation", ""),
+        mermaid=summary.get("Mermaid Diagram", "")
     )
 
 # Streamlit UI
@@ -134,7 +158,7 @@ if submitted:
         with st.spinner("Analizando tu sistema de negocio..."):
             try:
                 strategy_data = parse_system_components(answers, questions)
-                st.success("\U0001f680 Estrategia generada")
+                st.success("🚀 Estrategia generada")
                 st.subheader("Resumen")
                 st.json(strategy_data)
 
