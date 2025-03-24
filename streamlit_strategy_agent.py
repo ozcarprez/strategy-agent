@@ -34,7 +34,7 @@ def parse_flywheel(answers: List[str], questions: List[str]) -> Dict:
     prompt = f"""
 Eres un consultor experto en estrategia con enfoque en Flywheel (modelo de Jim Collins).
 Dado el siguiente cuestionario, construye lo siguiente:
-1. Un resumen de impulso del negocio (FlywheelSummary).
+1. Un resumen de impulso del negocio (Flywheel Summary).
 2. Los pasos del flywheel en secuencia.
 3. Un roadmap por fases: corto, mediano y largo plazo.
 
@@ -55,7 +55,7 @@ Cuestionario:
 
     return json.loads(response.choices[0].message.content)
 
-# Interfaz de usuario
+# Interfaz con Streamlit
 st.set_page_config(page_title="Flywheel Generator")
 st.title("🌬️ Generador de Flywheel")
 st.write("Responde estas preguntas para mapear tu rueda impulsora según el modelo de Jim Collins.")
@@ -77,27 +77,29 @@ if submitted:
                 result = parse_flywheel(answers, questions)
                 st.success("✅ Flywheel generado")
 
-                st.subheader("Resumen del Flywheel")
+                st.subheader("📘 Resumen del Flywheel")
                 st.markdown(result["FlywheelSummary"])
 
-                st.subheader("🔄 Pasos del Flywheel")
-                for i, step in enumerate(result["FlywheelSteps"], 1):
-                    st.markdown(f"**Paso {i}:** {step}")
+                st.subheader("🧭 Pasos del Flywheel")
+                steps = result["FlywheelSteps"]
+                if isinstance(steps, list):
+                    for i, step in enumerate(steps, 1):
+                        st.markdown(f"**Paso {i}:** {step}")
+                elif isinstance(steps, dict):
+                    for key, value in steps.items():
+                        st.markdown(f"**{key}:** {value}")
+                else:
+                    st.warning("⚠️ No se pudo interpretar los pasos del flywheel.")
 
-                st.subheader("📅 Roadmap")
+                st.subheader("🗓️ Roadmap")
                 for phase, items in result["Roadmap"].items():
                     st.markdown(f"### {phase}")
-                    steps = result["FlywheelSteps"]
-
-if isinstance(steps, list):
-    for i, step in enumerate(steps, 1):
-        st.markdown(f"**Paso {i}:** {step}")
-elif isinstance(steps, dict):
-    for key, value in steps.items():
-        st.markdown(f"**{key}:** {value}")
-else:
-    st.warning("No se pudo interpretar los pasos del flywheel.")
-
+                    if isinstance(items, list):
+                        for item in items:
+                            st.markdown(f"- {item}")
+                    elif isinstance(items, dict):
+                        for key, value in items.items():
+                            st.markdown(f"**{key}:** {value}")
                     else:
                         st.markdown(f"- {items}")
 
