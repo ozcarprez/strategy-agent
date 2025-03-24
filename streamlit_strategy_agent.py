@@ -10,7 +10,6 @@ client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # Preguntas para construir el Flywheel
 def load_flywheel_questions() -> List[str]:
     return [
-        # Fundamentos
         "🔍 ¿Qué actividad en tu negocio, cuando la haces consistentemente, genera resultados positivos?",
         "⚖️ ¿Qué resultados te dan energía o recursos para seguir impulsando el sistema?",
         "🚀 ¿Qué aspecto de tu negocio ya tiene tracción natural (crece sin mucho esfuerzo)?",
@@ -18,15 +17,11 @@ def load_flywheel_questions() -> List[str]:
         "🦾 ¿Qué fortalezas o capacidades únicas tienes que podrías aprovechar más?",
         "🔁 ¿Qué acciones tienen un efecto compuesto si las haces repetidamente?",
         "👍 ¿Qué es lo que tus clientes más valoran y te reconocen?",
-
-        # Secuencia del Flywheel
         "▶️ Paso 1: ¿Cuál es el primer paso clave que detona todo lo demás?",
         "⏳ Paso 2: ¿Qué ocurre después que genera valor y satisfacción?",
         "📈 Paso 3: ¿Qué pasa que hace más probable que los clientes regresen o que tú reinviertas?",
         "💪 Paso 4: ¿Qué haces con ese impulso para hacerlo crecer aún más?",
         "🔄 Paso 5: ¿Qué parte se repite o se automatiza para mantener el ciclo?",
-
-        # Obstáculos y claridad
         "❌ ¿Qué parte de tu sistema actual detiene el impulso?",
         "💡 ¿Qué harías si tuvieras que duplicar resultados sin duplicar esfuerzo?",
         "❓ ¿Qué no estás haciendo hoy que, si lo hicieras, haría una gran diferencia?"
@@ -39,16 +34,14 @@ def parse_flywheel(answers: List[str], questions: List[str]) -> Dict:
     prompt = f"""
 Eres un consultor experto en estrategia con enfoque en Flywheel (modelo de Jim Collins).
 Dado el siguiente cuestionario, construye lo siguiente:
-1. Un resumen de impulso del negocio (Flywheel Summary).
+1. Un resumen de impulso del negocio (FlywheelSummary).
 2. Los pasos del flywheel en secuencia.
 3. Un roadmap por fases: corto, mediano y largo plazo.
-4. Código Mermaid para visualizar el flywheel como diagrama.
 
 Responde SOLO en formato JSON con estas claves:
 - FlywheelSummary
 - FlywheelSteps
 - Roadmap
-- MermaidDiagram
 
 Cuestionario:
 {combined_input}
@@ -62,7 +55,7 @@ Cuestionario:
 
     return json.loads(response.choices[0].message.content)
 
-# UI
+# Interfaz de usuario
 st.set_page_config(page_title="Flywheel Generator")
 st.title("🌬️ Generador de Flywheel")
 st.write("Responde estas preguntas para mapear tu rueda impulsora según el modelo de Jim Collins.")
@@ -82,7 +75,7 @@ if submitted:
         with st.spinner("Analizando tu sistema de impulso..."):
             try:
                 result = parse_flywheel(answers, questions)
-                st.success("Flywheel generado")
+                st.success("✅ Flywheel generado")
 
                 st.subheader("Resumen del Flywheel")
                 st.markdown(result["FlywheelSummary"])
@@ -92,16 +85,13 @@ if submitted:
                     st.markdown(f"**Paso {i}:** {step}")
 
                 st.subheader("📅 Roadmap")
-for phase, items in result["Roadmap"].items():
-    st.markdown(f"### {phase}")
-    if isinstance(items, list):
-        for item in items:
-            st.markdown(f"- {item}")
-    else:
-        st.markdown(f"- {items}")
-
-                st.subheader("🎭 Visualización (Mermaid)")
-                st.code(result["MermaidDiagram"], language="mermaid")
+                for phase, items in result["Roadmap"].items():
+                    st.markdown(f"### {phase}")
+                    if isinstance(items, list):
+                        for item in items:
+                            st.markdown(f"- {item}")
+                    else:
+                        st.markdown(f"- {items}")
 
             except Exception as e:
                 st.error(f"Error: {e}")
