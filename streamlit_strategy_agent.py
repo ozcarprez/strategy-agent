@@ -8,33 +8,31 @@ from typing import List, Dict
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Preguntas para construir el Flywheel
-
 def load_flywheel_questions() -> List[str]:
     return [
         # Fundamentos
-        "\U0001F50D ¿Qué actividad en tu negocio, cuando la haces consistentemente, genera resultados positivos?",
-        "\u2696️ ¿Qué resultados te dan energía o recursos para seguir impulsando el sistema?",
-        "\U0001F680 ¿Qué aspecto de tu negocio ya tiene tracción natural (crece sin mucho esfuerzo)?",
-        "\U0001F91D ¿Qué valor entregas que hace que los clientes regresen o recomienden tu producto?",
-        "\U0001F9BE ¿Qué fortalezas o capacidades únicas tienes que podrías aprovechar más?",
-        "\U0001F501 ¿Qué acciones tienen un efecto compuesto si las haces repetidamente?",
-        "\U0001F44D ¿Qué es lo que tus clientes más valoran y te reconocen?",
+        "🔍 ¿Qué actividad en tu negocio, cuando la haces consistentemente, genera resultados positivos?",
+        "⚖️ ¿Qué resultados te dan energía o recursos para seguir impulsando el sistema?",
+        "🚀 ¿Qué aspecto de tu negocio ya tiene tracción natural (crece sin mucho esfuerzo)?",
+        "🤝 ¿Qué valor entregas que hace que los clientes regresen o recomienden tu producto?",
+        "🦾 ¿Qué fortalezas o capacidades únicas tienes que podrías aprovechar más?",
+        "🔁 ¿Qué acciones tienen un efecto compuesto si las haces repetidamente?",
+        "👍 ¿Qué es lo que tus clientes más valoran y te reconocen?",
 
         # Secuencia del Flywheel
-        "\u25B6️ Paso 1: ¿Cuál es el primer paso clave que detona todo lo demás?",
-        "\u23F3 Paso 2: ¿Qué ocurre después que genera valor y satisfacción?",
-        "\U0001F4C8 Paso 3: ¿Qué pasa que hace más probable que los clientes regresen o que tú reinviertas?",
-        "\U0001F4AA Paso 4: ¿Qué haces con ese impulso para hacerlo crecer aún más?",
-        "\U0001F504 Paso 5: ¿Qué parte se repite o se automatiza para mantener el ciclo?",
+        "▶️ Paso 1: ¿Cuál es el primer paso clave que detona todo lo demás?",
+        "⏳ Paso 2: ¿Qué ocurre después que genera valor y satisfacción?",
+        "📈 Paso 3: ¿Qué pasa que hace más probable que los clientes regresen o que tú reinviertas?",
+        "💪 Paso 4: ¿Qué haces con ese impulso para hacerlo crecer aún más?",
+        "🔄 Paso 5: ¿Qué parte se repite o se automatiza para mantener el ciclo?",
 
         # Obstáculos y claridad
-        "\u274C ¿Qué parte de tu sistema actual detiene el impulso?",
-        "\U0001F4A1 ¿Qué harías si tuvieras que duplicar resultados sin duplicar esfuerzo?",
-        "\u2753 ¿Qué no estás haciendo hoy que, si lo hicieras, haría una gran diferencia?"
+        "❌ ¿Qué parte de tu sistema actual detiene el impulso?",
+        "💡 ¿Qué harías si tuvieras que duplicar resultados sin duplicar esfuerzo?",
+        "❓ ¿Qué no estás haciendo hoy que, si lo hicieras, haría una gran diferencia?"
     ]
 
 # Procesar respuestas para generar flywheel
-
 def parse_flywheel(answers: List[str], questions: List[str]) -> Dict:
     combined_input = "\n".join([f"Q{i+1}: {q}\nA{i+1}: {a}" for i, (q, a) in enumerate(zip(questions, answers))])
 
