@@ -2,6 +2,7 @@ import streamlit as st
 import openai
 import os
 import json
+import re
 from typing import List, Dict
 
 # Cargar clave API desde variable de entorno
@@ -35,7 +36,6 @@ def load_questions() -> List[str]:
         "¿Quién es tu competencia invisible (la opción que nadie ve pero que gana)?"
     ]
 
-# Función para generar el sistema desde GPT
 def parse_system_components(answers: List[str], questions: List[str]) -> Dict:
     combined_input = "\n".join([f"Q{i+1}: {q}\nA{i+1}: {a}" for i, (q, a) in enumerate(zip(questions, answers))])
 
@@ -47,21 +47,11 @@ Given the following business questionnaire, extract and structure:
 - Loops (feedback patterns: reinforcing or limiting loops)
 - Context (external forces, market trends, customer needs, competitors)
 
-Return a JSON with the structure:
-{{
-  "Stocks": {{ ... }},
-  "Flows": {{ ... }},
-  "Loops": {{ ... }},
-  "Context": {{ ... }},
-  "Summary": {{
-    "Insights": [...],
-    "Bottlenecks": [...],
-    "Opportunities": [...],
-    "Strategic Recommendation": "..."
-  }}
-}}
-
-Also include a Mermaid diagram code block to visualize the system. Use `graph TD` format to represent key relationships between Stocks, Flows, and Loops.
+Return ONLY a JSON with those four categories and a summary section with:
+- Insights
+- Bottlenecks
+- Opportunities
+- Strategic Recommendation
 
 Questionnaire:
 {combined_input}
@@ -73,7 +63,12 @@ Questionnaire:
         temperature=0.4
     )
 
-    return json.loads(response.choices[0].message.content)
+    raw_output = response.choices[0].message.content
+    json_text = re.search(r"\{.*\}", raw_output, re.DOTALL)
+    if json_text:
+        return json.loads(json_text.group(0))
+    else:
+        raise ValueError("No se pudo extraer un JSON válido de la respuesta.")
 
 def generate_notion_template(strategy_data: Dict) -> str:
     template = """# Business System Map (Systems Thinking)
@@ -101,25 +96,18 @@ def generate_notion_template(strategy_data: Dict) -> str:
 ## 🚀 Opportunities
 {opportunities}
 
-## 🎯 Strategic Recommendation
+## 🌟 Strategic Recommendation
 {recommendation}
-
-## 📊 Visualización del sistema (Mermaid)
-```mermaid
-{mermaid}
-```
 """
-
     return template.format(
-        stocks=json.dumps(strategy_data["Stocks"], indent=2),
-        flows=json.dumps(strategy_data["Flows"], indent=2),
-        loops=json.dumps(strategy_data["Loops"], indent=2),
-        context=json.dumps(strategy_data["Context"], indent=2),
+        stocks=json.dumps(strategy_data["Stocks"], indent=2, ensure_ascii=False),
+        flows=json.dumps(strategy_data["Flows"], indent=2, ensure_ascii=False),
+        loops=json.dumps(strategy_data["Loops"], indent=2, ensure_ascii=False),
+        context=json.dumps(strategy_data["Context"], indent=2, ensure_ascii=False),
         insights="\n- " + "\n- ".join(strategy_data["Summary"]["Insights"] if isinstance(strategy_data["Summary"]["Insights"], list) else [strategy_data["Summary"]["Insights"]]),
         bottlenecks="\n- " + "\n- ".join(strategy_data["Summary"]["Bottlenecks"] if isinstance(strategy_data["Summary"]["Bottlenecks"], list) else [strategy_data["Summary"]["Bottlenecks"]]),
         opportunities="\n- " + "\n- ".join(strategy_data["Summary"]["Opportunities"] if isinstance(strategy_data["Summary"]["Opportunities"], list) else [strategy_data["Summary"]["Opportunities"]]),
-        recommendation=strategy_data["Summary"]["Strategic Recommendation"],
-        mermaid=strategy_data.get("Mermaid", "graph TD\n    A[Missing diagram]")
+        recommendation=strategy_data["Summary"]["Strategic Recommendation"]
     )
 
 # Streamlit UI
