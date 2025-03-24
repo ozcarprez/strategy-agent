@@ -4,7 +4,7 @@ import os
 import json
 from typing import List, Dict
 
-# Cargar clave API desde variable de entorno
+# Configurar clave API desde variable de entorno
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Preguntas con enfoque de systems thinking
@@ -35,8 +35,7 @@ def load_questions() -> List[str]:
         "¿Quién es tu competencia invisible (la opción que nadie ve pero que gana)?"
     ]
 
-# Funciones
-
+# Procesador de estrategia
 def parse_system_components(answers: List[str], questions: List[str]) -> Dict:
     combined_input = "\n".join([f"Q{i+1}: {q}\nA{i+1}: {a}" for i, (q, a) in enumerate(zip(questions, answers))])
 
@@ -66,6 +65,7 @@ Questionnaire:
 
     return json.loads(response.choices[0].message.content)
 
+# Plantilla para Notion
 def generate_notion_template(strategy_data: Dict) -> str:
     template = """# Business System Map (Systems Thinking)
 
@@ -95,19 +95,18 @@ def generate_notion_template(strategy_data: Dict) -> str:
 ## 🎯 Strategic Recommendation
 {recommendation}
 """
-
     return template.format(
-        stocks=json.dumps(strategy_data["Stocks"], indent=2),
-        flows=json.dumps(strategy_data["Flows"], indent=2),
-        loops=json.dumps(strategy_data["Loops"], indent=2),
-        context=json.dumps(strategy_data["Context"], indent=2),
+        stocks=json.dumps(strategy_data["Stocks"], indent=2, ensure_ascii=False),
+        flows=json.dumps(strategy_data["Flows"], indent=2, ensure_ascii=False),
+        loops=json.dumps(strategy_data["Loops"], indent=2, ensure_ascii=False),
+        context=json.dumps(strategy_data["Context"], indent=2, ensure_ascii=False),
         insights="\n- " + "\n- ".join(strategy_data["Insights"]),
         bottlenecks="\n- " + "\n- ".join(strategy_data["Bottlenecks"]),
         opportunities="\n- " + "\n- ".join(strategy_data["Opportunities"]),
         recommendation=strategy_data["Strategic Recommendation"]
     )
 
-# Streamlit UI
+# Interfaz con Streamlit
 st.set_page_config(page_title="🧠 Strategy Agent: Systems Thinking")
 st.title("🧠 Strategy Agent: Systems Thinking")
 st.write("Responde estas 16 preguntas para mapear tu negocio como un sistema.")
@@ -125,18 +124,16 @@ if submitted:
         st.error("Por favor responde todas las preguntas.")
     else:
         with st.spinner("Analizando tu sistema de negocio..."):
-    try:
-        strategy_data = parse_system_components(answers, questions)
-        st.success("🚀 Estrategia generada")
-        st.subheader("Resumen")
-        st.json(strategy_data)
+            try:
+                strategy_data = parse_system_components(answers, questions)
+                st.success("🚀 Estrategia generada")
+                st.subheader("Resumen")
+                st.json(strategy_data)
 
-        # Descargar plantilla para Notion
-        notion_text = generate_notion_template(strategy_data)
-        safe_text = notion_text.encode("utf-8", "ignore").decode("utf-8")
-        st.download_button("Descargar Plantilla para Notion", data=safe_text, file_name="business_system.md")
+                # Generar y descargar plantilla Notion
+                notion_text = generate_notion_template(strategy_data)
+                safe_text = notion_text.encode("utf-8", "ignore").decode("utf-8")
+                st.download_button("Descargar Plantilla para Notion", data=safe_text, file_name="business_system.md")
 
-    except Exception as e:
-        st.error(f"Error: {e}")
-
-
+            except Exception as e:
+                st.error(f"Error: {e}")
