@@ -1,12 +1,10 @@
 import streamlit as st
-from openai import OpenAI
+import openai
 import os
-import json
-import re
-from typing import List, Dict
+from typing import List
 
 # Set your OpenAI API key
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Load questions
 def load_questions() -> List[str]:
@@ -31,19 +29,19 @@ def load_questions() -> List[str]:
 
 # GPT call
 def gpt_extract(prompt: str) -> str:
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",  # Usa "gpt-4" si tienes acceso
         messages=[
             {"role": "system", "content": "You are a business strategist AI."},
             {"role": "user", "content": prompt}
         ],
         temperature=0.7
     )
-    return response.choices[0].message.content.strip()
+    return response['choices'][0]['message']['content'].strip()
 
 # System parser
-def parse_system_components(answers: List[str], questions: List[str]) -> Dict:
-    combined_input = "\n".join([f"Q{i+1}: {q}\nA{i+1}: {a}" for i, (q, a) in enumerate(zip(questions, answers))])
+def parse_system_components(answers: List[str], questions: List[str]) -> str:
+    combined_input = "\n".join([f"{i+1}: {q}\nA{i+1}: {a}" for i, (q, a) in enumerate(zip(questions, answers))])
     prompt = f"""
 You are a business strategist specializing in Blue Ocean Strategy and lean startup principles.
 
@@ -57,7 +55,6 @@ Format your answer clearly using bullet points and sections. Do NOT return JSON.
 Questionnaire:
 {combined_input}
 """
-
     return gpt_extract(prompt)
 
 # Streamlit app
@@ -79,13 +76,9 @@ if submitted:
         st.error("Please answer all the questions.")
     else:
         try:
-            strategy_text = parse_system_components(answers, questions)
-
-            # Clean and parse JSON
-            cleaned = re.sub(r"```(json)?", "", strategy_text).strip()
-            strategy = json.loads(cleaned)
-
+            strategy = parse_system_components(answers, questions)
             st.success("Here's your strategy:")
-            st.json(strategy)
+            st.markdown(strategy)
         except Exception as e:
-            st.error(f"Error parsing strategy JSON: {e}")
+            st.error(f"Something went wrong: {e}")
+
