@@ -87,9 +87,17 @@ if submitted:
                 st.subheader("📅 Roadmap")
                 for phase, items in result["Roadmap"].items():
                     st.markdown(f"### {phase}")
-                    if isinstance(items, list):
-                        for item in items:
-                            st.markdown(f"- {item}")
+                    steps = result["FlywheelSteps"]
+
+if isinstance(steps, list):
+    for i, step in enumerate(steps, 1):
+        st.markdown(f"**Paso {i}:** {step}")
+elif isinstance(steps, dict):
+    for key, value in steps.items():
+        st.markdown(f"**{key}:** {value}")
+else:
+    st.warning("No se pudo interpretar los pasos del flywheel.")
+
                     else:
                         st.markdown(f"- {items}")
 
