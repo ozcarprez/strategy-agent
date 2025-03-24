@@ -4,7 +4,7 @@ import os
 import json
 from typing import List, Dict
 
-# Configurar clave API desde variable de entorno
+# Cargar clave API desde variable de entorno
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Preguntas con enfoque de systems thinking
@@ -35,7 +35,6 @@ def load_questions() -> List[str]:
         "¿Quién es tu competencia invisible (la opción que nadie ve pero que gana)?"
     ]
 
-# Procesador de estrategia
 def parse_system_components(answers: List[str], questions: List[str]) -> Dict:
     combined_input = "\n".join([f"Q{i+1}: {q}\nA{i+1}: {a}" for i, (q, a) in enumerate(zip(questions, answers))])
 
@@ -47,11 +46,19 @@ Given the following business questionnaire, extract and structure:
 - Loops (feedback patterns: reinforcing or limiting loops)
 - Context (external forces, market trends, customer needs, competitors)
 
-Return ONLY a JSON with those four categories and a summary section with:
-- Insights
-- Bottlenecks
-- Opportunities
-- Strategic Recommendation
+Return ONLY a JSON with the following structure:
+{{
+  "Stocks": {{...}},
+  "Flows": {{...}},
+  "Loops": {{...}},
+  "Context": {{...}},
+  "Summary": {{
+    "Insights": "...",
+    "Bottlenecks": "...",
+    "Opportunities": "...",
+    "Strategic Recommendation": "..."
+  }}
+}}
 
 Questionnaire:
 {combined_input}
@@ -65,8 +72,8 @@ Questionnaire:
 
     return json.loads(response.choices[0].message.content)
 
-# Plantilla para Notion
 def generate_notion_template(strategy_data: Dict) -> str:
+    summary = strategy_data.get("Summary", {})
     template = """# Business System Map (Systems Thinking)
 
 ## 🧱 Stocks
@@ -92,21 +99,22 @@ def generate_notion_template(strategy_data: Dict) -> str:
 ## 🚀 Opportunities
 {opportunities}
 
-## 🎯 Strategic Recommendation
+## 🌟 Strategic Recommendation
 {recommendation}
 """
+
     return template.format(
-        stocks=json.dumps(strategy_data["Stocks"], indent=2, ensure_ascii=False),
-        flows=json.dumps(strategy_data["Flows"], indent=2, ensure_ascii=False),
-        loops=json.dumps(strategy_data["Loops"], indent=2, ensure_ascii=False),
-        context=json.dumps(strategy_data["Context"], indent=2, ensure_ascii=False),
-        insights="\n- " + "\n- ".join(strategy_data["Insights"]),
-        bottlenecks="\n- " + "\n- ".join(strategy_data["Bottlenecks"]),
-        opportunities="\n- " + "\n- ".join(strategy_data["Opportunities"]),
-        recommendation=strategy_data["Strategic Recommendation"]
+        stocks=json.dumps(strategy_data.get("Stocks", {}), indent=2, ensure_ascii=False),
+        flows=json.dumps(strategy_data.get("Flows", {}), indent=2, ensure_ascii=False),
+        loops=json.dumps(strategy_data.get("Loops", {}), indent=2, ensure_ascii=False),
+        context=json.dumps(strategy_data.get("Context", {}), indent=2, ensure_ascii=False),
+        insights=summary.get("Insights", ""),
+        bottlenecks=summary.get("Bottlenecks", ""),
+        opportunities=summary.get("Opportunities", ""),
+        recommendation=summary.get("Strategic Recommendation", "")
     )
 
-# Interfaz con Streamlit
+# Streamlit UI
 st.set_page_config(page_title="🧠 Strategy Agent: Systems Thinking")
 st.title("🧠 Strategy Agent: Systems Thinking")
 st.write("Responde estas 16 preguntas para mapear tu negocio como un sistema.")
@@ -126,11 +134,11 @@ if submitted:
         with st.spinner("Analizando tu sistema de negocio..."):
             try:
                 strategy_data = parse_system_components(answers, questions)
-                st.success("🚀 Estrategia generada")
+                st.success("\U0001f680 Estrategia generada")
                 st.subheader("Resumen")
                 st.json(strategy_data)
 
-                # Generar y descargar plantilla Notion
+                # Descargar plantilla para Notion
                 notion_text = generate_notion_template(strategy_data)
                 safe_text = notion_text.encode("utf-8", "ignore").decode("utf-8")
                 st.download_button("Descargar Plantilla para Notion", data=safe_text, file_name="business_system.md")
