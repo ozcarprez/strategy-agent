@@ -1,126 +1,116 @@
-# streamlit_strategy_agent.py (extendido con descarga de plantilla tipo Notion)
-
 import streamlit as st
 import openai
 import os
 import json
-import re
 from typing import List, Dict
-from datetime import datetime
-from io import StringIO
 
-# Set OpenAI API key
+# Cargar clave API desde variable de entorno
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Load business questions
+# Preguntas con enfoque de systems thinking
 def load_questions() -> List[str]:
     return [
-        "What does your business sell?",
-        "Who is your target customer?",
-        "How do you currently acquire customers?",
-        "What are your top 3 costs?",
-        "What are your top 3 revenue sources?",
-        "How much cash do you have on hand?",
-        "What assets or equipment do you own?",
-        "Who are your partners or suppliers?",
-        "What's your monthly revenue (estimate is OK)?",
-        "What’s your biggest bottleneck?",
-        "What sets you apart (if anything)?",
-        "What frustrates your customers the most?",
-        "What’s something customers keep asking for?",
-        "Who are your top competitors?",
-        "What trends or changes are affecting your industry?",
-        "What are your goals for the next 12 months?"
+        # STOCKS
+        "¿Con cuánto capital cuentas actualmente para operar?",
+        "¿Qué activos físicos, relaciones o conocimientos clave ya tienes?",
+        "¿A quiénes sirves hoy? (clientes principales)",
+        "¿Qué relaciones o alianzas tienes con otros actores (proveedores, socios)?",
+
+        # FLOWS
+        "¿Cómo entra dinero a tu sistema actualmente? (ventas, inversión, etc.)",
+        "¿En qué se te va la mayoría del dinero o recursos?",
+        "¿Qué canales usas para conseguir clientes nuevos?",
+        "¿Qué operaciones necesitas hacer cada semana para entregar valor?",
+
+        # LOOPS
+        "¿Qué hábito o proceso repetitivo parece estar frenando tu crecimiento?",
+        "¿Qué cosas haces que, cuando las haces más, generan más resultados?",
+        "¿Qué efecto tiene tu falta de recursos sobre el resto de tu sistema?",
+        "¿Qué errores o ciclos negativos se repiten y vuelven a aparecer?",
+
+        # CONTEXTO
+        "¿Qué cambios grandes están ocurriendo en tu industria o mercado?",
+        "¿Qué tendencias, leyes o tecnologías están cambiando las reglas del juego?",
+        "¿Qué es lo que tus clientes más te piden o necesitan con urgencia?",
+        "¿Quién es tu competencia invisible (la opción que nadie ve pero que gana)?"
     ]
 
-# Parse system components and generate strategy
+# Funciones
 
 def parse_system_components(answers: List[str], questions: List[str]) -> Dict:
     combined_input = "\n".join([f"Q{i+1}: {q}\nA{i+1}: {a}" for i, (q, a) in enumerate(zip(questions, answers))])
 
     prompt = f"""
-You are a strategy consultant trained in Blue Ocean Strategy, Mental Models, and Systems Thinking.
+You are a strategy expert using Systems Thinking.
+Given the following business questionnaire, extract and structure:
+- Stocks (what the business has: cash, assets, people, partnerships)
+- Flows (how value moves: revenue, costs, acquisition, operations)
+- Loops (feedback patterns: reinforcing or limiting loops)
+- Context (external forces, market trends, customer needs, competitors)
 
-Given the following business questionnaire, do the following:
+Return ONLY a JSON with those four categories and a summary section with:
+- Insights
+- Bottlenecks
+- Opportunities
+- Strategic Recommendation
 
-1. Extract key insights and patterns from the answers.
-2. Identify bottlenecks, opportunities, and reinforcing loops.
-3. Suggest a strategic recommendation to stand out in the market.
-
-Return a valid JSON in this format:
-{
-  "Stocks": {...},
-  "Flows": {...},
-  "Loops": {...},
-  "Context": {...},
-  "Insights": [...],
-  "Bottlenecks": [...],
-  "Opportunities": [...],
-  "Strategic Recommendation": "..."
-}
-
-Here is the questionnaire:
+Questionnaire:
 {combined_input}
 """
 
     response = client.chat.completions.create(
         model="gpt-4",
-        messages=[
-            {"role": "system", "content": "You are a strategic business analyst."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.7
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.4
     )
+
     return json.loads(response.choices[0].message.content)
 
-# Generate markdown for Notion/Canvas
+def generate_notion_template(strategy_data: Dict) -> str:
+    template = """# Business System Map (Systems Thinking)
 
-def generate_notion_markdown(data: dict) -> str:
-    def section(title, content):
-        return f"## {title}\n\n{content}\n"
+## 🧱 Stocks
+{stocks}
 
-    def list_block(items):
-        return "\n".join([f"- {item}" for item in items])
+## 🔁 Flows
+{flows}
 
-    md = f"# Business Strategy Canvas\nGenerated on {datetime.now().strftime('%Y-%m-%d')}\n\n"
+## 🔄 Loops
+{loops}
 
-    md += section("📦 Stocks",
-        f"**Cash:** {data['Stocks']['cash']}\n\n"
-        f"**Assets:** {data['Stocks']['assets']}\n\n"
-        f"**People:**\n{list_block(data['Stocks']['people'])}\n\n"
-        f"**Partnerships:**\n{list_block(data['Stocks']['partnerships'])}"
+## 🌍 Context
+{context}
+
+---
+
+## 💡 Insights
+{insights}
+
+## ❌ Bottlenecks
+{bottlenecks}
+
+## 🚀 Opportunities
+{opportunities}
+
+## 🎯 Strategic Recommendation
+{recommendation}
+"""
+
+    return template.format(
+        stocks=json.dumps(strategy_data["Stocks"], indent=2),
+        flows=json.dumps(strategy_data["Flows"], indent=2),
+        loops=json.dumps(strategy_data["Loops"], indent=2),
+        context=json.dumps(strategy_data["Context"], indent=2),
+        insights="\n- " + "\n- ".join(strategy_data["Insights"]),
+        bottlenecks="\n- " + "\n- ".join(strategy_data["Bottlenecks"]),
+        opportunities="\n- " + "\n- ".join(strategy_data["Opportunities"]),
+        recommendation=strategy_data["Strategic Recommendation"]
     )
-
-    md += section("🔁 Flows",
-        f"**Revenue:** {data['Flows']['revenue']}\n\n"
-        f"**Costs:**\n{list_block(data['Flows']['costs'])}\n\n"
-        f"**Acquisition Channels:**\n{list_block(data['Flows']['acquisition channels'])}\n\n"
-        f"**Operations Bottleneck:** {data['Flows']['ops']['bottleneck']}"
-    )
-
-    loops = data['Loops']['reinforcing patterns']
-    md += section("🔄 Loops",
-        "\n".join([f"**{k}** leads to:\n{list_block(v)}\n" for k, v in loops.items()])
-    )
-
-    context = data['Context']
-    md += section("🌐 Context",
-        f"**Trends:**\n{list_block(context['trends'])}\n\n"
-        f"**Customer Needs:**\n{list_block(context['customer needs'])}\n\n"
-        f"**Competition:**\n{list_block(context['competition'])}"
-    )
-
-    md += section("💡 Insights", list_block(data.get("Insights", [])))
-    md += section("🧱 Bottlenecks", list_block(data.get("Bottlenecks", [])))
-    md += section("📈 Opportunities", list_block(data.get("Opportunities", [])))
-    md += section("🚀 Strategic Recommendation", data.get("Strategic Recommendation", "N/A"))
-
-    return md
 
 # Streamlit UI
-st.set_page_config(page_title="Strategy Agent: Blue Ocean Generator")
-st.title("🌊 Strategy Agent: Blue Ocean Generator")
-st.write("Answer these 16 questions and get your custom strategy.")
+st.set_page_config(page_title="🧠 Strategy Agent: Systems Thinking")
+st.title("🧠 Strategy Agent: Systems Thinking")
+st.write("Responde estas 16 preguntas para mapear tu negocio como un sistema.")
 
 questions = load_questions()
 answers = []
@@ -128,26 +118,22 @@ answers = []
 with st.form("strategy_form"):
     for q in questions:
         answers.append(st.text_input(q))
-    submitted = st.form_submit_button("Generate Strategy")
+    submitted = st.form_submit_button("Generar Estrategia")
 
 if submitted:
     if "" in answers:
-        st.error("Please answer all the questions.")
+        st.error("Por favor responde todas las preguntas.")
     else:
-        try:
-            strategy_data = parse_system_components(answers, questions)
-            st.success("Here's your strategy:")
-            st.json(strategy_data)
+        with st.spinner("Analizando tu sistema de negocio..."):
+            try:
+                strategy_data = parse_system_components(answers, questions)
+                st.success("\ud83d\ude80 Estrategia generada")
+                st.subheader("Resumen")
+                st.json(strategy_data)
 
-            # Generate markdown and offer download
-            md_content = generate_notion_markdown(strategy_data)
-            md_file = StringIO(md_content)
-            st.download_button(
-                label="📥 Download Strategy Template (Notion/Markdown)",
-                data=md_file,
-                file_name="strategy_canvas.md",
-                mime="text/markdown"
-            )
+                # Descargar plantilla para Notion
+                notion_text = generate_notion_template(strategy_data)
+                st.download_button("Descargar Plantilla para Notion", data=notion_text, file_name="business_system.md")
 
-        except Exception as e:
-            st.error(f"Error: {e}")
+            except Exception as e:
+                st.error(f"Error: {e}")
